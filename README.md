@@ -1,0 +1,801 @@
+[3d_exploded_view_aihs_2026.html](https://github.com/user-attachments/files/32856442/3d_exploded_view_aihs_2026.html)
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIHS-2026 Smart Bracelet - 3D Exploded View</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Cairo', sans-serif;
+            box-sizing: border-box;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #06b6d4;
+            border-radius: 4px;
+        }
+        /* Neon Glow Effects */
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+        }
+        .glow-red {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+        }
+        .text-glow {
+            text-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+        }
+        /* Canvas positioning */
+        #webgl-container {
+            width: 100%;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        /* Glassmorphism UI */
+        .glass-panel {
+            background: rgba(10, 16, 30, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+        .glass-panel-danger {
+            background: rgba(30, 10, 10, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        /* Range slider styling */
+        input[type=range] {
+            accent-color: #06b6d4;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 overflow-hidden select-none">
+
+    <div id="webgl-container"></div>
+
+    <!-- UI Overlay Layer -->
+    <div class="relative z-10 w-full h-screen pointer-events-none flex flex-col justify-between p-4 md:p-6">
+
+        <!-- Top Header Navigation -->
+        <header class="flex justify-between items-center pointer-events-auto">
+            <div class="glass-panel px-4 py-2.5 rounded-2xl flex items-center gap-3 border-cyan-500/30">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-400/40 flex items-center justify-center text-cyan-400 animate-pulse">
+                    <i data-lucide="activity" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-extrabold text-lg md:text-xl tracking-wider text-white">AIHS-2026</h1>
+                        <span class="bg-cyan-500/20 text-cyan-300 text-xs px-2 py-0.5 rounded-full border border-cyan-500/30 font-semibold">تفكيك 3D تفاعلي</span>
+                    </div>
+                    <p class="text-xs text-slate-400">نظام المراقبة الصحية المتقدم للحجاج - العرض الهندسي المكتمل</p>
+                </div>
+            </div>
+
+            <!-- Header Quick Stats -->
+            <div class="hidden lg:flex items-center gap-3">
+                <div class="glass-panel px-4 py-2 rounded-xl text-center">
+                    <span class="text-[10px] text-slate-400 block">إجمالي الطبقات</span>
+                    <span class="text-sm font-bold text-cyan-400 code-font">12 قطعة رئيسية</span>
+                </div>
+                <div class="glass-panel px-4 py-2 rounded-xl text-center">
+                    <span class="text-[10px] text-slate-400 block">الوزن التقديري</span>
+                    <span class="text-sm font-bold text-emerald-400 code-font">45 جرام</span>
+                </div>
+                <div class="glass-panel px-4 py-2 rounded-xl text-center">
+                    <span class="text-[10px] text-slate-400 block">الحماية والاستجابة</span>
+                    <span class="text-sm font-bold text-amber-400 code-font">IP68 / 5G</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Middle Section (Interactive Canvas Space) -->
+        <main class="flex-1 flex justify-between items-center my-4 pointer-events-none">
+            
+            <!-- Left Panel: Layer Isolation Checklist -->
+            <aside id="layer-panel" class="pointer-events-auto glass-panel p-4 rounded-2xl w-72 max-h-[75vh] flex flex-col gap-3 overflow-hidden transition-all duration-300">
+                <div class="flex justify-between items-center border-b border-cyan-900/50 pb-2">
+                    <h3 class="font-bold text-sm text-cyan-300 flex items-center gap-2">
+                        <i data-lucide="layers" class="w-4 h-4"></i> طبقات السوار (12)
+                    </h3>
+                    <button id="toggle-all-layers" class="text-xs text-slate-400 hover:text-cyan-400 transition-colors">إخفاء/إظهار الكل</button>
+                </div>
+                <p class="text-[11px] text-slate-400">انقر على أي طبقة لعزلها أو قراءتها:</p>
+                
+                <div id="layers-list" class="flex-1 overflow-y-auto space-y-1.5 pr-1">
+                    <!-- Dynamic Layer Items will be inserted via JS -->
+                </div>
+            </aside>
+
+            <!-- Right Panel: Dynamic Spec Drawer (Inspect Panel) -->
+            <aside id="inspect-panel" class="pointer-events-auto glass-panel p-5 rounded-2xl w-80 lg:w-96 max-h-[80vh] flex flex-col justify-between transition-all duration-500 translate-x-0">
+                <div>
+                    <!-- Header with Badge -->
+                    <div class="flex justify-between items-start mb-3">
+                        <span id="comp-id-badge" class="bg-cyan-950 text-cyan-400 border border-cyan-800 text-[11px] px-2.5 py-0.5 rounded-full code-font font-bold">
+                            LAYER #02
+                        </span>
+                        <div id="comp-status" class="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-800/50">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                            نشط وفعال
+                        </div>
+                    </div>
+
+                    <!-- Title & Arabic/English Name -->
+                    <h2 id="comp-title" class="text-xl font-extrabold text-white mb-1">المتحكم الرئيسي ESP32-S3</h2>
+                    <p id="comp-sub" class="text-xs text-cyan-400 code-font mb-4">Main MCU & Edge AI Processor</p>
+
+                    <!-- Technical Specs Table -->
+                    <div class="space-y-2 mb-4 text-xs">
+                        <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/80">
+                            <span class="text-slate-400 block mb-0.5">الوظيفة الطبية/التقنية:</span>
+                            <p id="comp-func" class="text-slate-200 leading-relaxed font-medium">معالجة بيانات المستشعرات فورياً وتطبيق نموذج الذكاء الاصطناعي المصغر (TinyML) للتنبؤ بالأزمات الصحية.</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/80">
+                                <span class="text-slate-400 block mb-0.5">الموديل / العيار:</span>
+                                <span id="comp-model" class="text-cyan-300 font-semibold code-font">Nordic nRF52840 / ESP32</span>
+                            </div>
+                            <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/80">
+                                <span class="text-slate-400 block mb-0.5">استهلاك الطاقة:</span>
+                                <span id="comp-power" class="text-amber-300 font-semibold code-font">15 mW (Ultra Low)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="text-xs text-slate-300 leading-normal bg-cyan-950/20 p-3 rounded-xl border border-cyan-900/30">
+                        <p id="comp-desc">تعتبر هذه القطعة القلب النابض للسوار الذكي، حيث تحتوي على معالج مزدوج النواة خفيف الطاقة يتيح تحليل شفرات النبض والتنفس والتنبؤ بالسقوط قبل الحدوث بدقة عالية.</p>
+                    </div>
+                </div>
+
+                <!-- Footer Interactive Buttons inside drawer -->
+                <div class="pt-4 border-t border-slate-800 flex items-center justify-between gap-2 mt-4">
+                    <button id="focus-part-btn" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 glow-cyan">
+                        <i data-lucide="crosshair" class="w-4 h-4"></i> التركيز على القطعة
+                    </button>
+                    <button id="reset-cam-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Bottom Floating Controls Panel -->
+        <footer class="pointer-events-auto glass-panel p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 border-cyan-500/30">
+            
+            <!-- Left Controls: Play Animation & Reset -->
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <button id="explode-play-btn" class="flex-1 md:flex-none bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold px-5 py-2.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2 glow-cyan">
+                    <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                    <span id="play-btn-text">تشغيل حركة التفكيك</span>
+                </button>
+                <button id="toggle-rotation-btn" class="bg-slate-800/80 hover:bg-slate-700 text-slate-300 p-2.5 rounded-xl transition-all border border-slate-700" title="دوران تلقائي">
+                    <i data-lucide="rotate-3d" class="w-5 h-5"></i>
+                </button>
+                <button id="sos-pulse-btn" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 p-2.5 rounded-xl transition-all glow-red" title="محاكاة SOS طوارئ">
+                    <i data-lucide="siren" class="w-5 h-5 animate-pulse"></i>
+                </button>
+            </div>
+
+            <!-- Center Controls: Explosion Distance Slider -->
+            <div class="flex-1 w-full max-w-lg flex items-center gap-4 bg-slate-900/60 px-4 py-2 rounded-xl border border-slate-800">
+                <span class="text-xs font-bold text-cyan-300 flex items-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="maximize-2" class="w-4 h-4"></i> درجة التفكيك:
+                </span>
+                <input id="explode-slider" type="range" min="0" max="100" value="35" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                <span id="explode-val" class="text-xs font-bold text-cyan-400 code-font w-10 text-left">35%</span>
+            </div>
+
+            <!-- Right Controls: View Mode Presets -->
+            <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+                <button class="view-preset-btn bg-slate-800/80 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 text-xs px-3 py-2 rounded-lg border border-slate-700/80 transition-all" data-preset="perspective">منظور</button>
+                <button class="view-preset-btn bg-slate-800/80 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 text-xs px-3 py-2 rounded-lg border border-slate-700/80 transition-all" data-preset="top">علوي</button>
+                <button class="view-preset-btn bg-slate-800/80 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 text-xs px-3 py-2 rounded-lg border border-slate-700/80 transition-all" data-preset="front">جانبي</button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // AIHS-2026 Smart Bracelet Data Specs (From smallest inner micro component to largest outer band)
+        const BRACELET_COMPONENTS = [
+            {
+                id: "c01",
+                num: "01",
+                title: "المكونات الدقيقة Micro-SMD",
+                enTitle: "Micro Resistors, Caps & ICs (0201/0402)",
+                model: "Micro SMD 0201 / 0402",
+                power: "< 0.5 mW",
+                func: "إدارة الترددات الدقيقة، تصفية الضوضاء الكهربائية وحماية الحساسات.",
+                desc: "أصغر المكونات الإلكترونية داخل السوار بمقاسات متناهية الصغر لتوفير أقصى مساحة ممكنة داخل الهيكل الداخلي.",
+                color: 0xe2e8f0,
+                yOffset: -1.8,
+                meshType: "smd_cluster",
+                category: "pcb"
+            },
+            {
+                id: "c02",
+                num: "02",
+                title: "المتحكم الرئيسي والذكاء الاصطناعي",
+                enTitle: "MCU / Main Chip (nRF52840 / ESP32-S3)",
+                model: "nRF52840 Dual-Core BLE/AI",
+                power: "15 mW",
+                func: "معالجة خوارزميات TinyML للتنبؤ بالأزمات الصحية وتشفير البيانات بـ AES-256.",
+                desc: "شريحة فائقة الكفاءة منخفضة الطاقة تدعم البلوتوث الذكي وتسريع خوارزميات التعلم الآلي للتنبؤ بالأمراض الحركية والقلبية محلياً.",
+                color: 0x1e293b,
+                yOffset: -1.5,
+                meshType: "chip",
+                category: "pcb"
+            },
+            {
+                id: "c03",
+                num: "03",
+                title: "مصفوفة المستشعرات الطبية المتقدمة",
+                enTitle: "Medical Sensor Array (PPG, Temp, IMU)",
+                model: "MAX86150 + PT1000 + LSM6DS3",
+                power: "25 mW",
+                func: "قياس نبضات القلب، نسبة أكسجين الدم (SpO2)، الحرارة الطبية وكشف السقوط.",
+                desc: "تتكون من 12 مستشعراً حيوياً دقيقاً لقياس العلامات الحيوية بدرجة طبية وتنبيه المسعفين فور حدوث أي تدهور صحي.",
+                color: 0x10b981,
+                yOffset: -1.2,
+                meshType: "sensors",
+                category: "sensors"
+            },
+            {
+                id: "c04",
+                num: "04",
+                title: "وحدة الاتصال المستقل والتتبع",
+                enTitle: "Cellular & GNSS Module (4G/5G & GPS)",
+                model: "SIM7600G-H + u-blox M10",
+                power: "120 mW",
+                func: "الاتصال المباشر بالشبكة الحكومية وبث الموقع الجغرافي الفوري بدون هاتف.",
+                desc: "تضمن استمرارية الاتصال وتحديد موقع الحاج بدقة ±2 متر داخل المشاعر المزدحمة بفضل دعم أقمار GPS و Galileo و BeiDou.",
+                color: 0x3b82f6,
+                yOffset: -0.9,
+                meshType: "chip_metal",
+                category: "comm"
+            },
+            {
+                id: "c05",
+                num: "05",
+                title: "اللوحة الإلكترونية المرنة Rigid-Flex",
+                enTitle: "Rigid-Flex Main Printed Circuit Board",
+                model: "4-Layer Polyimide Flex PCB",
+                power: "N/A",
+                func: "ربط جميع المكونات الدقيقة بنظام انحناء ثلاثي الأبعاد مرن لراحة معصم اليد.",
+                desc: "لوحة مطبوعة مرنة متعددة الطبقات تمتاز بوزن خفيف جداً ومقاومة عالية للصدمات والحرارة.",
+                color: 0x064e3b,
+                yOffset: -0.6,
+                meshType: "pcb_board",
+                category: "pcb"
+            },
+            {
+                id: "c06",
+                num: "06",
+                title: "بطارية الليثيوم الصلبة (Solid-State)",
+                enTitle: "1200mAh Solid-State Li-Po Battery",
+                model: "Solid-State Polymer 3.85V",
+                power: "1200 mAh (7-10 Days)",
+                func: "توفير الطاقة المستمرة للسوار لمدة تصل لـ 10 أيام متواصلة بأمان تام.",
+                desc: "تكنولوجيا بطاريات جديدة مضادة للانفجار وتتحمل درجات الحرارة العالية حتى 60 درجة مئوية في أجواء الحج.",
+                color: 0xf59e0b,
+                yOffset: -0.3,
+                meshType: "battery",
+                category: "power"
+            },
+            {
+                id: "c07",
+                num: "07",
+                title: "الهيكل الداخلي المقاوم للماء IP68",
+                enTitle: "Waterproof Inner Enclosure (Resin/ABS)",
+                model: "High-Density ABS / Resin",
+                power: "N/A",
+                func: "حماية القطع الإلكترونية من العرق والماء والأتربة وتشتيت الحرارة.",
+                desc: "هيكل داخلي متين مطبوع بتقنية ثلاثية الأبعاد يوفر حماية فائقة بصلابة عالية وخفة وزن.",
+                color: 0x334155,
+                yOffset: 0.0,
+                meshType: "inner_case",
+                category: "body"
+            },
+            {
+                id: "c08",
+                num: "08",
+                title: "السماعة العظمية والميكروفون الذكي",
+                enTitle: "Bone Conduction Speaker & MEMS Mic",
+                model: "Piezo Bone Speaker + MEMS AI Mic",
+                power: "30 mW",
+                func: "إجراء مكالمات طوارئ صوتية وتوجيه العميان عبر الاهتزازات الصوتية العظمية.",
+                desc: "تتيح التحدث وسماع التعليمات في الأماكن المزدحمة والصاخبة دون الحاجة لسماعات أذن تقليدية.",
+                color: 0x64748b,
+                yOffset: 0.3,
+                meshType: "audio",
+                category: "comm"
+            },
+            {
+                id: "c09",
+                num: "09",
+                title: "زر الطوارئ المباشر SOS",
+                enTitle: "Red SOS Emergency Button & Seals",
+                model: "Tactile Switch with Silicone O-Ring",
+                power: "N/A",
+                func: "إطلاق تنبيه طوارئ فوري لفرق الإسعاف بلمسة واحدة من قبل الحاج.",
+                desc: "زر بارز باللون الأحمر لسهولة الوصول من قبل كبار السن وضِعاف البصر لإرسال نداء استغاثة فوري.",
+                color: 0xef4444,
+                yOffset: 0.6,
+                meshType: "sos_btn",
+                category: "body"
+            },
+            {
+                id: "c10",
+                num: "10",
+                title: "شاشة OLED المنحنية عالية التباين",
+                enTitle: "Curved Glass OLED Display Window",
+                model: "1.3\" Flexible OLED (1000 nits)",
+                power: "40 mW",
+                func: "عرض العلامات الحيوية والتنبيهات المباشرة بوضوح تحت أشعة الشمس.",
+                desc: "شاشات شديدة الإضاءة وموفرة للتقنيات مع دعم خطوط كبيرة وميزات سهولة الوصول للمسنين.",
+                color: 0x0284c7,
+                yOffset: 0.9,
+                meshType: "screen",
+                category: "body"
+            },
+            {
+                id: "c11",
+                num: "11",
+                title: "الخلية الشمسية المرنة Perovskite",
+                enTitle: "Ultra-thin Perovskite Solar Film",
+                model: "Flexible Solar Film (300mW Max)",
+                power: "Generates +300mW",
+                func: "الشحن المستمر للسوار أثناء السير تحت الشمس لزيادة عمر البطارية.",
+                desc: "شريحة شمسية فائقة النحافة مدمجة في حزام السوار توفر طاقة مستدامة طوال ساعات النهار.",
+                color: 0x78350f,
+                yOffset: 1.2,
+                meshType: "solar",
+                category: "power"
+            },
+            {
+                id: "c12",
+                num: "12",
+                title: "الحزام الخارجي المرن TPU",
+                enTitle: "Flexible Outer TPU Wristband Strap",
+                model: "Hypoallergenic Medical TPU",
+                power: "N/A",
+                func: "تثبيت السوار على المعصم براحة تامة مع طلاء مقاوم للحرارة والبكتيريا.",
+                desc: "المغلف الخارجي النهائي للسوار مصنوع من مطاط طبّي مرن وصديق للبشرة يمنع التعرق والتسلخات.",
+                color: 0x0f172a,
+                yOffset: 1.5,
+                meshType: "outer_strap",
+                category: "body"
+            }
+        ];
+
+        let scene, camera, renderer, controls;
+        let meshGroupMap = new Map();
+        let currentExplodeFactor = 0.35;
+        let isExplodingAnim = false;
+        let isAutoRotating = false;
+        let activeSelectedCompId = "c02";
+        let isSOSActive = false;
+
+        // Initialize Three.js WebGL Environment
+        function initEngine() {
+            const container = document.getElementById('webgl-container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x070b14);
+            scene.fog = new THREE.FogExp2(0x070b14, 0.03);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(12, 8, 15);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            container.appendChild(renderer.domElement);
+
+            // Orbit Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 40;
+            controls.minDistance = 3;
+
+            // Lights Setup
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+
+            const mainDirectional = new THREE.DirectionalLight(0x38bdf8, 2.5);
+            mainDirectional.position.set(10, 20, 15);
+            mainDirectional.castShadow = true;
+            scene.add(mainDirectional);
+
+            const cyanPointLight = new THREE.PointLight(0x06b6d4, 3, 20);
+            cyanPointLight.position.set(-8, 5, -5);
+            scene.add(cyanPointLight);
+
+            const redPointLight = new THREE.PointLight(0xef4444, 1.5, 15);
+            redPointLight.position.set(5, -5, 8);
+            scene.add(redPointLight);
+
+            // Grid Floor
+            const gridHelper = new THREE.GridHelper(30, 30, 0x0891b2, 0x1e293b);
+            gridHelper.position.y = -6;
+            scene.add(gridHelper);
+
+            build3DBraceletAssembly();
+
+            // Render loop start
+            animateLoop();
+
+            // Resize Event
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function build3DBraceletAssembly() {
+            BRACELET_COMPONENTS.forEach((comp) => {
+                const group = new THREE.Group();
+                group.userData = { id: comp.id, baseOffsetY: comp.yOffset, info: comp };
+
+                let mesh;
+                const matOptions = { roughness: 0.3, metalness: 0.4 };
+
+                switch(comp.meshType) {
+                    case "smd_cluster":
+                        // Micro Chips and Tiny Resistors
+                        mesh = new THREE.Group();
+                        for(let i = 0; i < 18; i++) {
+                            const smdMat = new THREE.MeshStandardMaterial({ color: i % 2 === 0 ? 0xd1d5db : 0xf59e0b, metalness: 0.8 });
+                            const smdGeom = new THREE.BoxGeometry(0.15, 0.08, 0.15);
+                            const smdMesh = new THREE.Mesh(smdGeom, smdMat);
+                            smdMesh.position.set((Math.random() - 0.5) * 2.2, 0, (Math.random() - 0.5) * 1.2);
+                            mesh.add(smdMesh);
+                        }
+                        break;
+
+                    case "chip":
+                        // Main Processor Chip
+                        const chipGeom = new THREE.BoxGeometry(1.2, 0.12, 1.2);
+                        const chipMat = new THREE.MeshStandardMaterial({ color: comp.color, roughness: 0.2, metalness: 0.5 });
+                        mesh = new THREE.Mesh(chipGeom, chipMat);
+                        // Add pin legs
+                        const pinsGeom = new THREE.BoxGeometry(1.35, 0.04, 1.35);
+                        const pinsMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 });
+                        const pinsMesh = new THREE.Mesh(pinsGeom, pinsMat);
+                        mesh.add(pinsMesh);
+                        break;
+
+                    case "sensors":
+                        // PPG Optic Array & Temp Sensor Pins
+                        mesh = new THREE.Group();
+                        const sensorBaseGeom = new THREE.BoxGeometry(1.8, 0.1, 0.9);
+                        const sensorBaseMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+                        const baseMesh = new THREE.Mesh(sensorBaseGeom, sensorBaseMat);
+                        mesh.add(baseMesh);
+
+                        // Green LED PPG Diodes
+                        for(let x = -0.5; x <= 0.5; x += 0.5) {
+                            const ledGeom = new THREE.CylinderGeometry(0.12, 0.12, 0.15, 16);
+                            const ledMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+                            const ledMesh = new THREE.Mesh(ledGeom, ledMat);
+                            ledMesh.position.set(x, 0.05, 0);
+                            mesh.add(ledMesh);
+                        }
+                        break;
+
+                    case "chip_metal":
+                        // Metallic Shielding Cellular Chip
+                        const shieldGeom = new THREE.BoxGeometry(2.0, 0.15, 1.4);
+                        const shieldMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.9, roughness: 0.1 });
+                        mesh = new THREE.Mesh(shieldGeom, shieldMat);
+                        break;
+
+                    case "pcb_board":
+                        // Flexible PCB Base
+                        const pcbGeom = new THREE.BoxGeometry(3.6, 0.08, 1.8);
+                        const pcbMat = new THREE.MeshStandardMaterial({ color: comp.color, roughness: 0.4 });
+                        mesh = new THREE.Mesh(pcbGeom, pcbMat);
+                        break;
+
+                    case "battery":
+                        // Li-Po Solid State Battery
+                        const batGeom = new THREE.BoxGeometry(3.2, 0.25, 1.6);
+                        const batMat = new THREE.MeshStandardMaterial({ color: comp.color, metalness: 0.6, roughness: 0.2 });
+                        mesh = new THREE.Mesh(batGeom, batMat);
+                        break;
+
+                    case "inner_case":
+                        // Inner Waterproof Structural Box
+                        const caseGeom = new THREE.BoxGeometry(4.0, 0.35, 2.2);
+                        const caseMat = new THREE.MeshStandardMaterial({ color: comp.color, roughness: 0.5, transparent: true, opacity: 0.85 });
+                        mesh = new THREE.Mesh(caseGeom, caseMat);
+                        break;
+
+                    case "audio":
+                        // Bone Conduction Vibration Module
+                        mesh = new THREE.Group();
+                        const audioGeom = new THREE.CylinderGeometry(0.35, 0.35, 0.15, 24);
+                        const audioMat = new THREE.MeshStandardMaterial({ color: comp.color, metalness: 0.8 });
+                        const aMesh1 = new THREE.Mesh(audioGeom, audioMat);
+                        aMesh1.position.x = -1.2;
+                        const aMesh2 = aMesh1.clone();
+                        aMesh2.position.x = 1.2;
+                        mesh.add(aMesh1);
+                        mesh.add(aMesh2);
+                        break;
+
+                    case "sos_btn":
+                        // Emergency SOS Button
+                        const btnGeom = new THREE.CylinderGeometry(0.28, 0.28, 0.3, 32);
+                        const btnMat = new THREE.MeshStandardMaterial({ color: comp.color, roughness: 0.2, emissive: 0x7f1d1d, emissiveIntensity: 0.5 });
+                        mesh = new THREE.Mesh(btnGeom, btnMat);
+                        mesh.rotation.z = Math.PI / 2;
+                        mesh.position.x = 2.1;
+                        break;
+
+                    case "screen":
+                        // Curved Glass Display
+                        const scrGeom = new THREE.BoxGeometry(3.2, 0.08, 1.8);
+                        const scrMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.0, metalness: 0.1, emissive: 0x0369a1, emissiveIntensity: 0.4 });
+                        mesh = new THREE.Mesh(scrGeom, scrMat);
+                        break;
+
+                    case "solar":
+                        // Ultra-thin Solar Panel Film
+                        const solarGeom = new THREE.BoxGeometry(3.6, 0.04, 1.9);
+                        const solarMat = new THREE.MeshStandardMaterial({ color: comp.color, metalness: 0.7, roughness: 0.3 });
+                        mesh = new THREE.Mesh(solarGeom, solarMat);
+                        break;
+
+                    case "outer_strap":
+                        // Outer Ergonomic Bracelet Band Frame
+                        mesh = new THREE.Group();
+                        const strapMainGeom = new THREE.TorusGeometry(2.6, 0.3, 16, 60, Math.PI * 1.4);
+                        const strapMat = new THREE.MeshStandardMaterial({ color: comp.color, roughness: 0.7 });
+                        const strapMesh = new THREE.Mesh(strapMainGeom, strapMat);
+                        strapMesh.rotation.x = Math.PI / 2;
+                        mesh.add(strapMesh);
+                        break;
+
+                    default:
+                        mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+                }
+
+                group.add(mesh);
+                scene.add(group);
+                meshGroupMap.set(comp.id, group);
+            });
+
+            updateAssemblyPositions(currentExplodeFactor);
+        }
+
+        function updateAssemblyPositions(factor) {
+            const spreadDistance = 3.8; // Vertical gap multiplier
+            meshGroupMap.forEach((group) => {
+                const baseOffsetY = group.userData.baseOffsetY;
+                group.position.y = baseOffsetY * factor * spreadDistance;
+            });
+        }
+
+        function animateLoop() {
+            requestAnimationFrame(animateLoop);
+
+            if (isAutoRotating) {
+                scene.rotation.y += 0.005;
+            }
+
+            // SOS Emergency Pulse Effect
+            if (isSOSActive) {
+                const sosGroup = meshGroupMap.get("c09");
+                if (sosGroup) {
+                    const scaleFactor = 1 + Math.sin(Date.now() * 0.01) * 0.2;
+                    sosGroup.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function setupUIEvents() {
+            // Render Layer Checkbox Panel
+            const layersListEl = document.getElementById('layers-list');
+            BRACELET_COMPONENTS.forEach((comp) => {
+                const item = document.createElement('div');
+                item.className = `layer-item flex items-center justify-between p-2 rounded-xl text-xs bg-slate-900/60 hover:bg-cyan-950/40 border border-slate-800 cursor-pointer transition-all ${comp.id === activeSelectedCompId ? 'border-cyan-500/80 bg-cyan-950/30' : ''}`;
+                item.dataset.id = comp.id;
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <input type="checkbox" checked class="layer-chk accent-cyan-500 cursor-pointer" data-id="${comp.id}">
+                        <span class="code-font text-[10px] text-cyan-400 font-bold">${comp.num}</span>
+                        <span class="font-semibold text-slate-200 truncate max-w-[130px]">${comp.title}</span>
+                    </div>
+                    <i data-lucide="chevron-left" class="w-3.5 h-3.5 text-slate-500"></i>
+                `;
+
+                item.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'INPUT') {
+                        selectComponent(comp.id);
+                    }
+                });
+
+                layersListEl.appendChild(item);
+            });
+
+            // Re-init Lucide Icons
+            lucide.createIcons();
+
+            // Layer Checkbox Toggles
+            document.querySelectorAll('.layer-chk').forEach(chk => {
+                chk.addEventListener('change', (e) => {
+                    const id = e.target.dataset.id;
+                    const group = meshGroupMap.get(id);
+                    if (group) {
+                        group.visible = e.target.checked;
+                    }
+                });
+            });
+
+            // Explode Slider
+            const slider = document.getElementById('explode-slider');
+            const sliderVal = document.getElementById('explode-val');
+            slider.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value) / 100;
+                currentExplodeFactor = val;
+                sliderVal.textContent = `${e.target.value}%`;
+                updateAssemblyPositions(currentExplodeFactor);
+            });
+
+            // Play Explode Animation
+            const playBtn = document.getElementById('explode-play-btn');
+            playBtn.addEventListener('click', () => {
+                isExplodingAnim = !isExplodingAnim;
+                const btnText = document.getElementById('play-btn-text');
+
+                if (isExplodingAnim) {
+                    btnText.textContent = "إيقاف الحركة";
+                    animateExplosionCycle();
+                } else {
+                    btnText.textContent = "تشغيل حركة التفكيك";
+                }
+            });
+
+            // Auto Rotation Toggle
+            const rotateBtn = document.getElementById('toggle-rotation-btn');
+            rotateBtn.addEventListener('click', () => {
+                isAutoRotating = !isAutoRotating;
+                rotateBtn.classList.toggle('bg-cyan-600');
+                rotateBtn.classList.toggle('text-white');
+            });
+
+            // SOS Pulse Button
+            const sosBtn = document.getElementById('sos-pulse-btn');
+            sosBtn.addEventListener('click', () => {
+                isSOSActive = !isSOSActive;
+                sosBtn.classList.toggle('bg-red-600');
+                sosBtn.classList.toggle('text-white');
+                selectComponent("c09");
+            });
+
+            // Focus Part Button
+            document.getElementById('focus-part-btn').addEventListener('click', () => {
+                focusOnSelectedComponent(activeSelectedCompId);
+            });
+
+            // Reset Camera
+            document.getElementById('reset-cam-btn').addEventListener('click', () => {
+                camera.position.set(12, 8, 15);
+                controls.target.set(0, 0, 0);
+            });
+
+            // Preset View Buttons
+            document.querySelectorAll('.view-preset-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const preset = e.target.dataset.preset;
+                    if (preset === 'top') camera.position.set(0, 22, 0.1);
+                    if (preset === 'front') camera.position.set(0, 0, 20);
+                    if (preset === 'perspective') camera.position.set(12, 8, 15);
+                    controls.target.set(0, 0, 0);
+                });
+            });
+        }
+
+        function selectComponent(id) {
+            activeSelectedCompId = id;
+            const comp = BRACELET_COMPONENTS.find(c => c.id === id);
+            if (!comp) return;
+
+            // Update UI Drawer Specs
+            document.getElementById('comp-id-badge').textContent = `LAYER #${comp.num}`;
+            document.getElementById('comp-title').textContent = comp.title;
+            document.getElementById('comp-sub').textContent = comp.enTitle;
+            document.getElementById('comp-func').textContent = comp.func;
+            document.getElementById('comp-model').textContent = comp.model;
+            document.getElementById('comp-power').textContent = comp.power;
+            document.getElementById('comp-desc').textContent = comp.desc;
+
+            // Highlight Active Layer in Panel
+            document.querySelectorAll('.layer-item').forEach(item => {
+                item.classList.remove('border-cyan-500/80', 'bg-cyan-950/30');
+                if (item.dataset.id === id) {
+                    item.classList.add('border-cyan-500/80', 'bg-cyan-950/30');
+                }
+            });
+
+            // Highlight 3D Group Effect
+            meshGroupMap.forEach((group, gId) => {
+                group.scale.set(1, 1, 1);
+                if (gId === id) {
+                    group.scale.set(1.15, 1.15, 1.15);
+                }
+            });
+        }
+
+        function focusOnSelectedComponent(id) {
+            const group = meshGroupMap.get(id);
+            if (group) {
+                const targetY = group.position.y;
+                camera.position.set(6, targetY + 2, 8);
+                controls.target.set(0, targetY, 0);
+            }
+        }
+
+        function animateExplosionCycle() {
+            if (!isExplodingAnim) return;
+            let dir = 0.005;
+
+            function step() {
+                if (!isExplodingAnim) return;
+                currentExplodeFactor += dir;
+                if (currentExplodeFactor >= 1.0 || currentExplodeFactor <= 0.0) {
+                    dir = -dir;
+                }
+                document.getElementById('explode-slider').value = Math.round(currentExplodeFactor * 100);
+                document.getElementById('explode-val').textContent = `${Math.round(currentExplodeFactor * 100)}%`;
+                updateAssemblyPositions(currentExplodeFactor);
+                requestAnimationFrame(step);
+            }
+            step();
+        }
+
+        // Initialize Everything On Load
+        window.onload = function() {
+            initEngine();
+            setupUIEvents();
+            selectComponent("c02"); // Default selection: Main MCU
+        };
+    </script>
+</body>
+</html>
